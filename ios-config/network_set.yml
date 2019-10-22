@@ -3,12 +3,31 @@
   gather_facts: no
 
   tasks:
+##### Cisco IOS 用 block の開始 #####
     - name: ios block
       block:
+## Cisco IOS NTP サーバの設定
+        - name: set ios ntp
+          ios_ntp:
+            server: "{{ item }}"
+          loop: "{{ ntp.servers }}"
+          notify: save
+
+## Cisco IOS SNMP の設定
         - name: set ios snmp
           ios_config:
             src: ios_snmp.j2
           notify: save
+
+## Cisco IOS Syslog サーバの設定
+        - name: set ios syslog
+          ios_logging:
+            dest: host
+            name: "{{ item }}"
+          loop: "{{ syslog.servers }}"
+          notify: save
+
+## Cisco IOS ユーザの設定
         - name: set ios user
           ios_user:
             name: "{{ item.name }}"
@@ -18,9 +37,10 @@
           notify: save
 
       when: ansible_network_os == "ios"
+##### Cisco IOS 用 block の終了 #####
 
   handlers:
+## Cisco IOS コンフィグの保存 #####
     - name: save
       ios_config:
         save_when: always
-

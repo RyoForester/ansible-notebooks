@@ -1,0 +1,26 @@
+---
+- hosts: network
+  gather_facts: no
+
+  tasks:
+    - name: ios block
+      block:
+        - name: set ios snmp
+          ios_config:
+            src: ios_snmp.j2
+          notify: save
+        - name: set ios user
+          ios_user:
+            name: "{{ item.name }}"
+            privilege: "{{ item.privilege }}"
+            sshkey: "{{ lookup('file', item.sshkey) }}"
+          loop: "{{ user }}"
+          notify: save
+
+      when: ansible_network_os == "ios"
+
+  handlers:
+    - name: save
+      ios_config:
+        save_when: always
+

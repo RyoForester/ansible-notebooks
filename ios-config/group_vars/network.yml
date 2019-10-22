@@ -1,0 +1,30 @@
+---
+ansible_network_os: ios
+ansible_connection: network_cli
+ansible_user: cisco
+ansible_password: cisco
+ansible_become: yes
+ansible_become_method: enable
+ansible_become_password: cisco
+
+ntp:
+  servers:
+    - 192.168.0.101
+    - 192.168.0.102
+
+snmp:
+  community:
+    - name: public
+      read_write: no
+    - name: secret
+      read_write: yes
+
+syslog:
+  servers:
+    - 192.168.0.201
+    - 192.168.0.202
+
+user:
+  - name: admin
+    sshkey: ~/.ssh/id_rsa.pub
+    privilege: 15

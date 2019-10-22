@@ -1,0 +1,61 @@
+---
+- hosts: network
+  gather_facts: no
+
+  tasks:
+
+##### ■前処理 #####
+## 日時別ディレクトリ名の変数定義
+  - name: create parent directroy
+    set_fact:
+      logdir_date: "./log/log_{{ lookup('pipe', 'date +%Y%m%d_%H%M_%S') }}"
+    run_once: yes
+## ターゲットノード別ディレクトリの作成
+  - name: create directory for target node
+    file:
+      path: "{{ logdir_date }}/{{ inventory_hostname }}"
+      state: directory
+    register: logdir_host
+
+
+##### ■コマンド実行処理 #####
+
+##### Cisco IOS 用 block の開始 #####
+  - name: ios block
+    block:
+## Cisco IOS コマンドの実行
+      - name: ios show command
+        ios_command:
+          commands: "{{ item }}"
+        register: ios_results
+        loop: "{{ show_commands }}"
+## Cisco IOS コマンドの実行結果の変数定義
+      - name: set ios results
+        set_fact:
+          results: "{{ ios_results.results }}"
+    when: ansible_network_os == "ios"
+##### Cisco IOS 用 block の終了 #####
+
+
+##### ■後処理 #####
+
+## コマンド別ファイルの保存
+  - name: save files per commands
+    copy:
+      content: "{{ item.stdout[0] }}"
+      dest: "{{ logdir_host.path }}/{{ item.item | replace(' ', '_')}}.log"
+    loop: "{{ results }}"
+    loop_control:
+      label: "{{ item.item }}"
+
+## ターゲット別ファイルの保存
+  - name: save files per hosts
+    blockinfile:
+      block: "{{ item.stdout[0] }}"
+      path: "{{ logdir_host.path }}/{{ inventory_hostname }}.log"
+      marker: "================== {{ item.item }} =================="
+      create: yes
+    loop: "{{ results }}"
+    loop_control:
+      label: "{{ item.item }}"
+
